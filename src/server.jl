@@ -420,13 +420,18 @@ serve(host="127.0.0.1", port=8080, dir="example", verbose=true, launch_browser=t
 You should then see the `index.html` page from the `example` folder being rendered. If you change the file, the browser will automatically reload the
 page and show the changes.
 """
-function serve(fw::FileWatcher=SimpleWatcher(file_changed_callback);
-               host::String="127.0.0.1", port::Int=8000, dir::AbstractString="", verbose::Bool=false,
-               coreloopfun::Function=(c, fw)->nothing,
-               preprocess_request=identity,
-               inject_browser_reload_script::Bool = true,
-               launch_browser::Bool = false,
-               allow_cors::Bool = false)
+function serve(
+            fw::FileWatcher=SimpleWatcher(file_changed_callback);
+            host::String="127.0.0.1",
+            port::Int=8000,
+            dir::AbstractString="",
+            verbose::Bool=false,
+            coreloopfun::Function=(c, fw)->nothing,
+            preprocess_request::Function=identity,
+            inject_browser_reload_script::Bool=true,
+            launch_browser::Bool=false,
+            allow_cors::Bool=false
+        )
 
     8000 ≤ port ≤ 9000 || throw(ArgumentError("The port must be between 8000 and 9000."))
     setverbose(verbose)
@@ -441,7 +446,14 @@ function serve(fw::FileWatcher=SimpleWatcher(file_changed_callback);
     # make request handler
     req_handler = HTTP.RequestHandlerFunction() do req
         req = preprocess_request(req)
-        serve_file(fw, req; inject_browser_reload_script = inject_browser_reload_script, allow_cors = allow_cors)
+
+        @show req.target
+
+        serve_file(
+            fw, req;
+            inject_browser_reload_script = inject_browser_reload_script,
+            allow_cors = allow_cors
+        )
     end
 
     server = Sockets.listen(parse(IPAddr, host), port)
