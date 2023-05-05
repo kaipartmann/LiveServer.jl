@@ -47,7 +47,23 @@ set_unchanged!(wf::WatchedFile) = (wf.mtime = mtime(wf.path);)
 Set the current state of a `WatchedFile` as deleted (if it re-appears it will
 immediately be marked as changed and trigger the callback).
 """
-set_deleted!(wf::WatchedFile) = (wf.mtime = -Inf;)
+function set_deleted!(wf::WatchedFile)
+    wf.mtime = -Inf;
+    # send a removed message to all viewers of that file
+    for (k, v) in WS_VIEWERS
+        if k == wf.path
+            @show "$k > sending removed"
+            for vi in v
+                @async begin
+                    try
+                        HTTP.WebSockets.send(vi, "removed")
+                    catch
+                    end
+                end
+            end
+        end
+    end
+end
 
 
 """
@@ -110,7 +126,7 @@ function file_watcher_task!(fw::FileWatcher)::Nothing
                     # file has changed, set it unchanged and trigger callback
                     set_unchanged!(wf)
                     fw.callback(wf.path)
-                elseif state == -1
+                elseif (state == -1) && (wf.mtime > -Inf)
                     # file has been deleted, set the mtime to -Inf so that
                     # if it re-appears then it's immediately marked as changed
                     set_deleted!(wf)
