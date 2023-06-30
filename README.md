@@ -117,7 +117,7 @@ $ julia --project=docs -ie 'using LiveServer; servedocs()'
 
 ### Serve docs with [Literate.jl](https://github.com/fredrikekre/Literate.jl)
 
-When using the `servedocs` function together with documentation that contains `Literate` files, generating an $\infty$ loop is possible if `servedocs` is watching the generated `*.md` files for updates. Different folder structures require `servedocs` to contain specific keywords to prevent this from happening.
+When using the `servedocs` function together with documentation that contains `Literate` files, causing an $\infty$ loop is possible if `servedocs` is watching the generated `*.md` files for updates. To avoid an $\infty$ loop, use the `literate` keyword to indicate the location of the `*.jl` files. Then, any `*.jl` file is assumed to generate a corresponding `*.md` file, which will not be watched.
 
 #### All files in `src`
 ```
@@ -131,7 +131,7 @@ docs
 servedocs(literate="")
 ```
 
-#### Literate files in `docs`
+#### Literate files in a separate directory
 ```
 docs
 ├── literate
